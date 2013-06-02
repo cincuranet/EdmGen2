@@ -1,5 +1,8 @@
 ﻿/**
  * Copyright (C) 2008, Microsoft Corp.  All Rights Reserved
+ * 
+ * Contributors:
+ *	Jiri Cincura (jiri@cincura.net)
  */
 
 using System;
@@ -120,7 +123,7 @@ namespace EdmGen2
         private static void PrintModelGenUsage()
         {
             System.Console.WriteLine("Usage:  ModelGenerator <connection string> <provider name> <model name> [<version>] [includeFKs]");
-            System.Console.WriteLine("             where <version> is 1.0 (for EF v1) or 2.0 (for EF v2)");
+            System.Console.WriteLine("             where <version> is 1.0 (for EF v1) or 2.0 (for EF v2) or 3.0 (for EF v3)");
             System.Console.WriteLine("             and where includeFKs is only valid on for EF versions later than EF v1");
         }
 
@@ -134,19 +137,23 @@ namespace EdmGen2
             string connectionString = args[1];
             string provider = args[2];
             string modelName = args[3];
-            Version version = EntityFrameworkVersions.Version2;
+            Version version = EntityFrameworkVersions.Version3;
             if (args.Length > 4)
             {
                 if (args[4] == "1.0")
                 {
                     version = EntityFrameworkVersions.Version1;
                 }
+				else if (args[4] == "2.0")
+				{
+					version = EntityFrameworkVersions.Version2;
+				}
             }
 
-            bool includeForeignKeys = version == EntityFrameworkVersions.Version2 ? true : false;
+            bool includeForeignKeys = version >= EntityFrameworkVersions.Version2 ? true : false;
             if (args.Length > 5)
             {
-                if (version == EntityFrameworkVersions.Version2 && args[5] != "includeFKs")
+                if (version >= EntityFrameworkVersions.Version2 && args[5] != "includeFKs")
                 {
                     includeForeignKeys = true;
                 }
@@ -380,10 +387,11 @@ namespace EdmGen2
 
         private static void ValidateAndGenerateViews(FileInfo edmxFile, LanguageOption languageOption, bool generateViews)
         {
-            XDocument doc = XDocument.Load(edmxFile.FullName);
-            XElement c = GetCsdlFromEdmx(doc);
-            XElement s = GetSsdlFromEdmx(doc);
-            XElement m = GetMslFromEdmx(doc);
+            XDocument xdoc = XDocument.Load(edmxFile.FullName);
+            XElement c = GetCsdlFromEdmx(xdoc);
+            XElement s = GetSsdlFromEdmx(xdoc);
+            XElement m = GetMslFromEdmx(xdoc);
+			Version v = _namespaceManager.GetVersionFromEDMXDocument(xdoc);
 
             // load the csdl
             XmlReader[] cReaders = { c.CreateReader() };
@@ -413,12 +421,18 @@ namespace EdmGen2
                     GetFileNameWithNewExtension(edmxFile, ".GeneratedViews" +
                         GetFileExtensionForLanguageOption(languageOption));
                 EntityViewGenerator evg = new EntityViewGenerator(languageOption);
-                viewGenerationErrors =
-                    evg.GenerateViews(mappingItemCollection, outputFile);
+				using (var file = File.OpenWrite(outputFile))
+				{
+					using (var writer = new StreamWriter(file))
+					{
+						viewGenerationErrors =
+							evg.GenerateViews(mappingItemCollection, writer, v);
+					}
+				}
             }
             else
             {
-                viewGenerationErrors = EntityViewGenerator.Validate(mappingItemCollection);
+                viewGenerationErrors = EntityViewGenerator.Validate(mappingItemCollection, v);
             }
 
             // write errors
@@ -847,30 +861,35 @@ namespace EdmGen2
     {
         private static Version v1 = EntityFrameworkVersions.Version1;
         private static Version v2 = EntityFrameworkVersions.Version2;
+		private static Version v3 = EntityFrameworkVersions.Version3;
 
         private Dictionary<Version, XNamespace> _versionToCSDLNamespace = new Dictionary<Version, XNamespace>() 
         { 
         { v1, XNamespace.Get("http://schemas.microsoft.com/ado/2006/04/edm") }, 
-        { v2, XNamespace.Get("http://schemas.microsoft.com/ado/2008/09/edm") } 
+        { v2, XNamespace.Get("http://schemas.microsoft.com/ado/2008/09/edm") },
+		{ v3, XNamespace.Get("http://schemas.microsoft.com/ado/2009/11/edm") }
         };
 
         private Dictionary<Version, XNamespace> _versionToSSDLNamespace = new Dictionary<Version, XNamespace>() 
         { 
         { v1, XNamespace.Get("http://schemas.microsoft.com/ado/2006/04/edm/ssdl") }, 
-        { v2, XNamespace.Get("http://schemas.microsoft.com/ado/2009/02/edm/ssdl") } 
+        { v2, XNamespace.Get("http://schemas.microsoft.com/ado/2009/02/edm/ssdl") },
+        { v3, XNamespace.Get("http://schemas.microsoft.com/ado/2009/11/edm/ssdl") } 
         };
 
         private Dictionary<Version, XNamespace> _versionToMSLNamespace = new Dictionary<Version, XNamespace>() 
         { 
         { v1, XNamespace.Get("urn:schemas-microsoft-com:windows:storage:mapping:CS") }, 
-        { v2, XNamespace.Get("http://schemas.microsoft.com/ado/2008/09/mapping/cs") } 
+        { v2, XNamespace.Get("http://schemas.microsoft.com/ado/2008/09/mapping/cs") },
+		{ v3, XNamespace.Get("http://schemas.microsoft.com/ado/2009/11/mapping/cs") }
         };
 
 
         private Dictionary<Version, XNamespace> _versionToEDMXNamespace = new Dictionary<Version, XNamespace>() 
         { 
         { v1, XNamespace.Get("http://schemas.microsoft.com/ado/2007/06/edmx") }, 
-        { v2, XNamespace.Get("http://schemas.microsoft.com/ado/2008/10/edmx") } 
+        { v2, XNamespace.Get("http://schemas.microsoft.com/ado/2008/10/edmx") },
+		{ v3, XNamespace.Get("http://schemas.microsoft.com/ado/2009/11/edmx") }
         };
 
         private Dictionary<XNamespace, Version> _namespaceToVersion = new Dictionary<XNamespace, Version>();
