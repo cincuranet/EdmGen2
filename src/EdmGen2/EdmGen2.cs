@@ -81,7 +81,7 @@ namespace EdmGen2
             Console.WriteLine("Usage:  EdmGen2 [arguments]");
             Console.WriteLine("                 /FromEdmx <edmx file>");
             Console.WriteLine("                 /ToEdmx <csdl file> <msl file> <ssdl file>");
-            Console.WriteLine("                 /ModelGen <connection string> <provider name> <model name>");
+			Console.WriteLine("                 /ModelGen <connection string> <provider name> <model name> [<version>] [includeFKs] [pluralize]");
             Console.WriteLine("                 /RetrofitModel <connection string> <provider name> <model name> <percent threshold>?");
             Console.WriteLine("                 /ViewGen cs|vb <edmx file>");
             Console.WriteLine("                 /CodeGen cs|vb <edmx file>");
@@ -122,14 +122,14 @@ namespace EdmGen2
 
         private static void PrintModelGenUsage()
         {
-            System.Console.WriteLine("Usage:  ModelGenerator <connection string> <provider name> <model name> [<version>] [includeFKs]");
+            System.Console.WriteLine("Usage:  ModelGenerator <connection string> <provider name> <model name> [<version>] [includeFKs] [pluralize]");
             System.Console.WriteLine("             where <version> is 1.0 (for EF v1) or 2.0 (for EF v2) or 3.0 (for EF v3)");
             System.Console.WriteLine("             and where includeFKs is only valid on for EF versions later than EF v1");
         }
 
         private static void ModelGen(string[] args)
         {
-            if (args.Length < 4 || args.Length > 5)
+            if (args.Length < 4 || args.Length > 7)
             {
                 PrintModelGenUsage();
                 return;
@@ -150,24 +150,41 @@ namespace EdmGen2
 				}
             }
 
-            bool includeForeignKeys = version >= EntityFrameworkVersions.Version2 ? true : false;
+            bool includeForeignKeys = false;
+			bool pluralize = false;
             if (args.Length > 5)
             {
-                if (version >= EntityFrameworkVersions.Version2 && args[5] != "includeFKs")
+                if (version >= EntityFrameworkVersions.Version2 && args[5] == "includeFKs")
                 {
                     includeForeignKeys = true;
                 }
-                else
+				if (args[5] == "pluralize")
+				{
+					pluralize = true;
+				}
+				if (args[5] != "pluralize" && args[5] != "includeFKs")
                 {
                     PrintModelGenUsage();
                     return;
                 }
             }
-            ModelGen(connectionString, provider, modelName, version, includeForeignKeys);
+			if (args.Length > 6)
+			{
+				if (args[6] == "pluralize")
+				{
+					pluralize = true;
+				}
+				if (args[6] != "pluralize")
+				{
+					PrintModelGenUsage();
+					return;
+				}
+			}
+	        ModelGen(connectionString, provider, modelName, version, includeForeignKeys, pluralize);
         }
 
         private static void ModelGen(
-            string connectionString, string provider, string modelName, Version version, bool includeForeignKeys)
+            string connectionString, string provider, string modelName, Version version, bool includeForeignKeys, bool pluralize)
         {
             IList<EdmSchemaError> ssdlErrors = null;
             IList<EdmSchemaError> csdlAndMslErrors = null;
@@ -200,7 +217,7 @@ namespace EdmGen2
             }
 
             // write out errors & warnings
-            if (hasSsdlErrors && hasSsdlWarnings)
+            if (hasSsdlErrors || hasSsdlWarnings)
             {
                 System.Console.WriteLine("Errors occurred during generation:");
                 WriteErrors(ssdlErrors);
@@ -225,7 +242,13 @@ namespace EdmGen2
                 new EntityModelSchemaGenerator(
                     essg.EntityContainer, csdlNamespace, csdlEntityContainerName);
             emsg.GenerateForeignKeyProperties = includeForeignKeys;
-            csdlAndMslErrors = emsg.GenerateMetadata(version);
+	        if (pluralize)
+	        {
+		        emsg.PluralizationService =
+			        System.Data.Entity.Design.PluralizationServices.PluralizationService.CreateService(
+				        new System.Globalization.CultureInfo("en-US"));
+	        }
+	        csdlAndMslErrors = emsg.GenerateMetadata(version);
 
 
             // detect if there are errors or only warnings from csdl/msl generation
