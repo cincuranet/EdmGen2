@@ -55,7 +55,7 @@ namespace EdmGen2UnitTests
 
         private string ConnectionString
         {
-            get { return "Data Source=mkaufman-dev2;Initial Catalog=Northwind;Integrated Security=True;MultipleActiveResultSets=True"; }
+            get { return "Data Source=(local);Initial Catalog=Northwind;Integrated Security=True;MultipleActiveResultSets=True"; }
         }
 
         private bool CompareXMLFiles(string f1, string f2)
@@ -124,7 +124,6 @@ namespace EdmGen2UnitTests
             }
         }
 
-
         [TestMethod]
         public void ModelGen_V1()
         {
@@ -135,8 +134,13 @@ namespace EdmGen2UnitTests
         public void ModelGen_V2_FKs()
         {
             ModelGenTest("2.0", true);
-
         }
+
+		[TestMethod]
+		public void ModelGen_V2_FKs_Pluralize()
+		{
+			ModelGenTest("2.0", true, true);
+		}
 
         [TestMethod]
         public void ModelGen_V2_NoFKs()
@@ -144,7 +148,37 @@ namespace EdmGen2UnitTests
             ModelGenTest("2.0", false);
         }
 
-    private void ModelGenTest(string version, bool includeFKs)
+		[TestMethod]
+		public void ModelGen_V2_NoFKs_Pluralize()
+		{
+			ModelGenTest("2.0", false, true);
+		}
+
+		[TestMethod]
+		public void ModelGen_V3_FKs()
+		{
+			ModelGenTest("3.0", true);
+		}
+
+		[TestMethod]
+		public void ModelGen_V3_FKs_Pluralize()
+		{
+			ModelGenTest("3.0", true, true);
+		}
+
+		[TestMethod]
+		public void ModelGen_V3_NoFKs()
+		{
+			ModelGenTest("3.0", false);
+		}
+
+		[TestMethod]
+		public void ModelGen_V3_NoFKs_Pluralize()
+		{
+			ModelGenTest("3.0", false, true);
+		}
+
+    private void ModelGenTest(string version, bool includeFKs, bool pluralize = false)
     {
             string modelName = "Northwind";
             string edmxFileName = modelName + ".edmx";
@@ -161,6 +195,13 @@ namespace EdmGen2UnitTests
                 tmp[args.Length] = "includeFKs";
                 args = tmp;
             }
+			if (pluralize)
+			{
+				string[] tmp = new string[args.Length + 1];
+				System.Array.Copy(args, tmp, args.Length);
+				tmp[args.Length] = "pluralize";
+				args = tmp;
+			}
 
             EdmGen2.EdmGen2.Main(args);
 
