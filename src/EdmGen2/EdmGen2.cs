@@ -1,6 +1,6 @@
 ﻿/**
  * Copyright (C) 2008, Microsoft Corp.  All Rights Reserved
- * 
+ *
  * Contributors:
  *	Jiri Cincura (jiri@cincura.net)
  */
@@ -21,20 +21,20 @@ using ConceptualEdmGen;
 namespace EdmGen2
 {
     /// <summary>
-    /// 
-    /// This is a command-line program to perform some common Entity Data 
-    /// Model tooling functions on EDMX files.  It is similiar in functionality 
-    /// to the .net framework's EdmGen.exe, but it will operate on the ".edmx" 
-    /// file format, instead of the .csdl, .ssdl & .msl file formats used by the 
+    ///
+    /// This is a command-line program to perform some common Entity Data
+    /// Model tooling functions on EDMX files.  It is similiar in functionality
+    /// to the .net framework's EdmGen.exe, but it will operate on the ".edmx"
+    /// file format, instead of the .csdl, .ssdl & .msl file formats used by the
     /// .net framework's EDM.
-    /// 
+    ///
     /// </summary>
     public class EdmGen2
     {
 
         internal enum Mode { FromEdmx, ToEdmx, ModelGen, CodeGen, ViewGen, Validate, RetrofitModel, Help }
 
-        // a class that understands what the different XML namespaces are for the different EF versions. 
+        // a class that understands what the different XML namespaces are for the different EF versions.
         private static NamespaceManager _namespaceManager = new NamespaceManager();
 
         public static void Main(string[] args)
@@ -190,7 +190,7 @@ namespace EdmGen2
             IList<EdmSchemaError> csdlAndMslErrors = null;
 
             // generate the SSDL
-            string ssdlNamespace = modelName + "Model.Store";
+            string ssdlNamespace = modelName + ".Store";
             EntityStoreSchemaGenerator essg =
                 new EntityStoreSchemaGenerator(
                     provider, connectionString, ssdlNamespace);
@@ -236,7 +236,7 @@ namespace EdmGen2
             ssdlxw.Flush();
 
             // generate the CSDL
-            string csdlNamespace = modelName + "Model";
+            string csdlNamespace = modelName;
             string csdlEntityContainerName = modelName + "Entities";
             EntityModelSchemaGenerator emsg =
                 new EntityModelSchemaGenerator(
@@ -276,7 +276,7 @@ namespace EdmGen2
                 WriteErrors(csdlAndMslErrors);
             }
 
-            // if there were errors, abort.  Don't abort if there were only warnigns.  
+            // if there were errors, abort.  Don't abort if there were only warnigns.
             if (hasCsdlErrors)
             {
                 return;
@@ -326,7 +326,7 @@ namespace EdmGen2
             }
             cedm.Execute();
         }
-        
+
         private static void CodeGen(string[] args)
         {
             if (args.Length != 3)
@@ -352,12 +352,12 @@ namespace EdmGen2
             XDocument xdoc = XDocument.Load(edmxFile.FullName);
             XElement c = GetCsdlFromEdmx(xdoc);
             Version v = _namespaceManager.GetVersionFromEDMXDocument(xdoc);
-            
+
             StringWriter sw = new StringWriter();
-            IList<EdmSchemaError> errors = null; 
+            IList<EdmSchemaError> errors = null;
 
             //
-            // code-gen uses different classes for V1 and V2 of the EF 
+            // code-gen uses different classes for V1 and V2 of the EF
             //
             if (v == EntityFrameworkVersions.Version1)
             {
@@ -372,7 +372,7 @@ namespace EdmGen2
             }
 
             // write out code-file
-            string outputFileName = GetFileNameWithNewExtension(edmxFile, 
+            string outputFileName = GetFileNameWithNewExtension(edmxFile,
                 GetFileExtensionForLanguageOption(languageOption));
             File.WriteAllText(outputFileName, sw.ToString());
 
@@ -419,19 +419,19 @@ namespace EdmGen2
             // load the csdl
             XmlReader[] cReaders = { c.CreateReader() };
             IList<EdmSchemaError> cErrors = null;
-            EdmItemCollection edmItemCollection = 
+            EdmItemCollection edmItemCollection =
                 MetadataItemCollectionFactory.CreateEdmItemCollection(cReaders, out cErrors);
 
-            // load the ssdl 
+            // load the ssdl
             XmlReader[] sReaders = { s.CreateReader() };
             IList<EdmSchemaError> sErrors = null;
-            StoreItemCollection storeItemCollection = 
+            StoreItemCollection storeItemCollection =
                 MetadataItemCollectionFactory.CreateStoreItemCollection(sReaders, out sErrors);
 
             // load the msl
             XmlReader[] mReaders = { m.CreateReader() };
             IList<EdmSchemaError> mErrors = null;
-            StorageMappingItemCollection mappingItemCollection = 
+            StorageMappingItemCollection mappingItemCollection =
                 MetadataItemCollectionFactory.CreateStorageMappingItemCollection(
                 edmItemCollection, storeItemCollection, mReaders, out mErrors);
 
@@ -480,13 +480,13 @@ namespace EdmGen2
             FileInfo outputFile = new FileInfo(
                 GetFileNameWithNewExtension(mFile, ".edmx"));
             ToEdmx(
-                File.ReadAllText(cFile.FullName), File.ReadAllText(sFile.FullName), 
+                File.ReadAllText(cFile.FullName), File.ReadAllText(sFile.FullName),
                 File.ReadAllText(mFile.FullName), outputFile);
         }
 
         private static void ToEdmx(String c, String s, String m, FileInfo edmxFile)
         {
-            // This will strip out any of the xml header info from the xml strings passed in 
+            // This will strip out any of the xml header info from the xml strings passed in
             XDocument cDoc = XDocument.Load(new StringReader(c));
             c = cDoc.Root.ToString();
             XDocument sDoc = XDocument.Load(new StringReader(s));
@@ -496,7 +496,7 @@ namespace EdmGen2
             FixUpMslForEDMDesigner(mDoc.Root);
             m = mDoc.Root.ToString();
 
-            // get the version to use - we use the root CSDL as the version. 
+            // get the version to use - we use the root CSDL as the version.
             Version v = _namespaceManager.GetVersionFromCSDLDocument(cDoc);
             XNamespace edmxNamespace = _namespaceManager.GetEDMXNamespaceForVersion(v);
 
@@ -642,7 +642,7 @@ namespace EdmGen2
                 Console.WriteLine("Error:  file " + mFile.FullName + " does not exist");
             }
 
-            if (cFile == null || sFile == null || mFile == null || 
+            if (cFile == null || sFile == null || mFile == null ||
                 !cFile.Exists || !sFile.Exists || !mFile.Exists)
             {
                 return false;
@@ -762,11 +762,11 @@ namespace EdmGen2
         #region "fix-up" code to fix up MSL so that it will load in the EDMX designer
 
         //
-        // This will re-write MSL to remove some syntax that the EDM Designer 
-        // doesn't support.  Specifically, the designer doesn't support 
+        // This will re-write MSL to remove some syntax that the EDM Designer
+        // doesn't support.  Specifically, the designer doesn't support
         //     - the "TypeName" attribute in "EntitySetMapping" elements
-        //     - the "StoreEntitySet" attribute in "EntityTypeMapping" and 
-        //       "EntitySetMapping" elements.   
+        //     - the "StoreEntitySet" attribute in "EntityTypeMapping" and
+        //       "EntitySetMapping" elements.
         //
         private static void FixUpMslForEDMDesigner(XElement mappingRoot)
         {
@@ -827,7 +827,7 @@ namespace EdmGen2
             XElement etm = new XElement(xn);
             etm.Add(typeNameAttribute);
 
-            // move the "storeEntitySet" attribute into the new 
+            // move the "storeEntitySet" attribute into the new
             // EntityTypeMapping node
             foreach (XAttribute a in entitySetMappingNode.Attributes())
             {
@@ -886,31 +886,31 @@ namespace EdmGen2
         private static Version v2 = EntityFrameworkVersions.Version2;
 		private static Version v3 = EntityFrameworkVersions.Version3;
 
-        private Dictionary<Version, XNamespace> _versionToCSDLNamespace = new Dictionary<Version, XNamespace>() 
-        { 
-        { v1, XNamespace.Get("http://schemas.microsoft.com/ado/2006/04/edm") }, 
+        private Dictionary<Version, XNamespace> _versionToCSDLNamespace = new Dictionary<Version, XNamespace>()
+        {
+        { v1, XNamespace.Get("http://schemas.microsoft.com/ado/2006/04/edm") },
         { v2, XNamespace.Get("http://schemas.microsoft.com/ado/2008/09/edm") },
 		{ v3, XNamespace.Get("http://schemas.microsoft.com/ado/2009/11/edm") }
         };
 
-        private Dictionary<Version, XNamespace> _versionToSSDLNamespace = new Dictionary<Version, XNamespace>() 
-        { 
-        { v1, XNamespace.Get("http://schemas.microsoft.com/ado/2006/04/edm/ssdl") }, 
+        private Dictionary<Version, XNamespace> _versionToSSDLNamespace = new Dictionary<Version, XNamespace>()
+        {
+        { v1, XNamespace.Get("http://schemas.microsoft.com/ado/2006/04/edm/ssdl") },
         { v2, XNamespace.Get("http://schemas.microsoft.com/ado/2009/02/edm/ssdl") },
-        { v3, XNamespace.Get("http://schemas.microsoft.com/ado/2009/11/edm/ssdl") } 
+        { v3, XNamespace.Get("http://schemas.microsoft.com/ado/2009/11/edm/ssdl") }
         };
 
-        private Dictionary<Version, XNamespace> _versionToMSLNamespace = new Dictionary<Version, XNamespace>() 
-        { 
-        { v1, XNamespace.Get("urn:schemas-microsoft-com:windows:storage:mapping:CS") }, 
+        private Dictionary<Version, XNamespace> _versionToMSLNamespace = new Dictionary<Version, XNamespace>()
+        {
+        { v1, XNamespace.Get("urn:schemas-microsoft-com:windows:storage:mapping:CS") },
         { v2, XNamespace.Get("http://schemas.microsoft.com/ado/2008/09/mapping/cs") },
 		{ v3, XNamespace.Get("http://schemas.microsoft.com/ado/2009/11/mapping/cs") }
         };
 
 
-        private Dictionary<Version, XNamespace> _versionToEDMXNamespace = new Dictionary<Version, XNamespace>() 
-        { 
-        { v1, XNamespace.Get("http://schemas.microsoft.com/ado/2007/06/edmx") }, 
+        private Dictionary<Version, XNamespace> _versionToEDMXNamespace = new Dictionary<Version, XNamespace>()
+        {
+        { v1, XNamespace.Get("http://schemas.microsoft.com/ado/2007/06/edmx") },
         { v2, XNamespace.Get("http://schemas.microsoft.com/ado/2008/10/edmx") },
 		{ v3, XNamespace.Get("http://schemas.microsoft.com/ado/2009/11/edmx") }
         };
