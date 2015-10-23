@@ -370,6 +370,11 @@ namespace EdmGen2
                 EntityCodeGenerator codeGen = new EntityCodeGenerator(languageOption);
                 errors = codeGen.GenerateCode(c.CreateReader(), sw);
             }
+            else if (v == EntityFrameworkVersions.Version3)
+            {
+                EntityCodeGenerator codeGen = new EntityCodeGenerator(languageOption);
+                errors = codeGen.GenerateCode(c.CreateReader(), sw, EntityFrameworkVersions.Version3);
+            }
 
             // write out code-file
             string outputFileName = GetFileNameWithNewExtension(edmxFile, 
